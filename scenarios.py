@@ -78,8 +78,8 @@ ARCHETYPES = {
     '3: $135,000 (32%)': {'mr': 0.32},
     '4: $190,000 (47%)': {'mr': 0.47},
 }
-SCENARIOS = ['Pre-Budget', 'Post-Budget', 'Pty Ltd']
-COLS = ['#2e86c1', '#e74c3c', '#27ae60']
+SCENARIOS = ['Pre-Budget', 'Post-Budget', 'Pty Ltd', 'Pty Ltd (Dist.)']
+COLS = ['#2e86c1', '#e74c3c', '#27ae60', '#f39c12']
 
 # %% [markdown]
 # ## Pre-generate shared data
@@ -231,7 +231,7 @@ def simulate(mr, scenario):
                     cost_bases[sim, mask] = values[sim, mask]
                     cost_years[sim, mask] = yr
 
-            elif scenario == 'Pty Ltd':
+            elif scenario == 'Pty Ltd' or scenario == 'Pty Ltd (Dist.)':
                 net = g.sum() - carry_fwd[sim]
                 if net > 0:
                     cum_taxable[sim]     += net
@@ -254,7 +254,7 @@ def simulate(mr, scenario):
 
     total_pf = values.sum(axis=1)
 
-    if scenario == 'Pty Ltd' and PTY_DISTRIBUTE:
+    if (scenario == 'Pty Ltd' and PTY_DISTRIBUTE) or scenario == 'Pty Ltd (Dist.)':
         roc       = np.minimum(total_pf, INITIAL)  # initial capital, tax-free return
         dividend  = total_pf - roc                  # profits above initial capital
         max_frank = dividend * CORP_RATE / (1 - CORP_RATE)
@@ -354,37 +354,19 @@ summary = pd.DataFrame(rows)
 print(summary.to_string(index=False))
 
 # %% [markdown]
-# ## 2. Pty Ltd vs Post-Budget Wealth Delta
+# ## 2. Scenario Comparison
 
 # %%
-print('\nPost-Budget minus Pre-Budget terminal wealth:')
-
+print(f'\n{"Archetype":>22s} {"Pre-Budget":>12s} {"Post-Budget":>12s} {"Pty Ltd":>12s} {"Pty (Dist)":>12s}')
+print('-' * 76)
 for arch_label, arch in ARCHETYPES.items():
-    mr = arch['mr']
-    w_pre = all_results[arch_label]['Pre-Budget'][0].mean()
-    w_post = all_results[arch_label]['Post-Budget'][0].mean()
-    w_pty = all_results[arch_label]['Pty Ltd'][0].mean()
-    print(f'{arch_label:>22s}  Pre: ${w_pre:>10,.0f}  Post: ${w_post:>10,.0f}  '
-          f'Pty: ${w_pty:>10,.0f}  '
-          f'Post-Pre: ${w_post-w_pre:>+,.0f}')
+    vals = []
+    for sc in SCENARIOS:
+        vals.append(all_results[arch_label][sc][0].mean())
+    print(f'{arch_label:>22s} ' + ' '.join(f'${v:>11,.0f}' for v in vals))
 
 # %% [markdown]
-# ## 3. Pty Ltd Advantage
-
-# %%
-print('\nPty Ltd vs Post-Budget (going concern, 30% flat):')
-print(f'{"Archetype":>22s}  {"Adv %":>6s}  {"Post-Budget":>12s}  {"Pty Ltd":>12s}')
-print('-' * 60)
-
-for arch_label, arch in ARCHETYPES.items():
-    mr = arch['mr']
-    w_post = all_results[arch_label]['Post-Budget'][0].mean()
-    w_pty  = all_results[arch_label]['Pty Ltd'][0].mean()
-    adv_pct = (w_pty - w_post) / INITIAL * 100
-    print(f'{arch_label:>22s}  {adv_pct:>4.1f}%     ${w_post:>10,.0f}  ${w_pty:>10,.0f}')
-
-# %% [markdown]
-# ## 4. Portfolio Paths — 32% and 47% brackets
+# ## 3. Portfolio Paths — 32% and 47% brackets
 
 # %%
 DRILL_BRACKETS = ['3: $135,000 (32%)', '4: $190,000 (47%)']
@@ -463,7 +445,7 @@ for bi, mr_label in enumerate(DRILL_BRACKETS):
         plt.close()
 
 # %% [markdown]
-# ## 5. All Archetypes Box Plots
+# ## 4. All Archetypes Box Plots
 
 # %%
 fig, axes = plt.subplots(2, 2, figsize=(16, 10))
@@ -509,35 +491,7 @@ if not IN_JUPYTER:
 #  This approximates by showing the impact of CPI on the terminal real gain.)
 
 # %% [markdown]
-# ## 6. Sensitivity: Pty Ltd Distribution vs Going Concern
-#
-# When `PTY_DISTRIBUTE=True`, the company liquidates at year N with full franking
-# settlement at the individual's marginal rate. When `False`, the company is a
-# going concern paying only the 30% corporate rate indefinitely.
-
-# %%
-_dist_saved = _save_globals()
-_orig_dist = PTY_DISTRIBUTE
-
-print('Pty Ltd: Going Concern (30% flat) vs Distribution at Year N')
-print(f'{"Archetype":>22s} {"GoingConc":>12s} {"Distrib":>12s} {"Delta":>10s} {"Drag%":>8s}')
-print('-' * 70)
-
-for arch_label, arch in ARCHETYPES.items():
-    mr = arch['mr']
-    PTY_DISTRIBUTE = False
-    r_gc = simulate(mr, 'Pty Ltd')
-    PTY_DISTRIBUTE = True
-    r_dist = simulate(mr, 'Pty Ltd')
-    gc = r_gc[0].mean()
-    d = r_dist[0].mean()
-    print(f'{arch_label:>22s} ${gc:>10,.0f}  ${d:>10,.0f}  ${d-gc:>+,.0f}  {(d-gc)/INITIAL*100:>+5.1f}%')
-
-PTY_DISTRIBUTE = _orig_dist
-_restore_globals(_dist_saved)
-
-# %% [markdown]
-# ## 7. Sensitivity: Time Horizon
+# ## 5. Sensitivity: Time Horizon
 #
 # Ranking stability across 5, 10, 15, 20, and 30-year horizons.
 
@@ -563,34 +517,3 @@ for arch_label, arch in ARCHETYPES.items():
         print(f'{arch_label:>22s} {sc:>12s}  {bar}')
 
 _restore_globals(_h_saved)
-
-# %% [markdown]
-# ## 8. Distribution Drag: % Wealth Lost
-#
-# What fraction of terminal wealth is consumed by the franking settlement when
-# distributing at each horizon?
-
-# %%
-_h2_saved = _save_globals()
-
-print('\nDistribution drag (% of going-concern wealth lost to franking settlement)')
-header = f'{"Archetype":>22s}'
-for y in HORIZONS:
-    header += f' {y:>6}yr'
-print(header)
-print('-' * 56)
-
-for arch_label, arch in ARCHETYPES.items():
-    mr = arch['mr']
-    line = f'{arch_label:>22s}'
-    for y in HORIZONS:
-        _regenerate_shared(y, S_SIMS)
-        PTY_DISTRIBUTE = False
-        r_gc = simulate(mr, 'Pty Ltd')
-        PTY_DISTRIBUTE = True
-        r_dist = simulate(mr, 'Pty Ltd')
-        drag = (r_gc[0].mean() - r_dist[0].mean()) / r_gc[0].mean() * 100
-        line += f' {drag:>+5.1f}%'
-    print(line)
-
-_restore_globals(_h2_saved)
