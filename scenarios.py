@@ -69,25 +69,6 @@ R_DIST = 0.32
 FRANKING_PCT  = 0.80   # fraction of dividends that are fully franked
 FRANKING_RATE = 0.30   # corporate tax rate embedded in franking credit
 
-# Progressive Australian tax brackets 2025-26 (resident, incl. 2% Medicare)
-_BRACKETS = [
-    (18200,  0.02),
-    (45000,  0.18),
-    (135000, 0.32),
-    (190000, 0.39),
-    (1e12,   0.47),
-]
-
-def _progressive_tax(income):
-    """Tax on `income` using progressive brackets. Vectorized."""
-    tax = np.zeros_like(income, dtype=float)
-    prev = 0.0
-    for limit, rate in _BRACKETS:
-        in_bracket = np.clip(income, prev, limit) - prev
-        tax += in_bracket * rate
-        prev = limit
-    return tax
-
 VOL_MEDIAN = 0.22    # empirical ASX large/mid-cap
 VOL_SIGMA  = 0.20    # lognormal dispersion
 TURNOVER_A = 2       # beta(2,6) → mean ~25%
@@ -230,7 +211,7 @@ def simulate(mr, scenario):
                     cost_years[sim, mask] = yr
 
             elif scenario == 'Post-Budget':
-                rate = max(mr, 0.30)
+                rate = max(mr, 0.30 + 0.02)  # 30% floor + 2% Medicare
                 idx_cost = cost_bases[sim, mask] * (1 + CPI) ** (yr - cost_years[sim, mask])
                 real_g = values[sim, mask] - idx_cost
                 nom_g  = g
