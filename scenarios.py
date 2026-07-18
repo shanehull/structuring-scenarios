@@ -53,14 +53,15 @@ N_SIMS       = 10_000
 # Smaller sample for sensitivity sweeps — speed up dev, can increase for final
 S_SIMS       = 1_000
 
-CG_MEAN   = 0.07
-DIV_YIELD = 0.02
+CG_MEAN   = 0.06
+DIV_YIELD = 0.03
 CPI       = 0.025
 CORP_RATE = 0.30
 RHO       = 0.35
 
 # Pty Ltd: going concern (30% flat, no distribution) or liquidate at year 10
 PTY_DISTRIBUTE = False
+RETIRE_MR     = 0.30   # tax bracket at retirement/distribution
 
 # Dividend franking: most ASX dividends are fully franked at 30%
 FRANKING_PCT  = 0.80   # fraction of dividends that are fully franked
@@ -257,12 +258,13 @@ def simulate(mr, scenario):
     total_pf = values.sum(axis=1)
 
     if (scenario == 'Pty Ltd' and PTY_DISTRIBUTE) or scenario == 'Pty Ltd (Dist.)':
-        roc       = np.minimum(total_pf, INITIAL)  # initial capital, tax-free return
-        dividend  = total_pf - roc                  # profits above initial capital
+        roc       = np.minimum(total_pf, INITIAL)
+        dividend  = total_pf - roc
         max_frank = dividend * CORP_RATE / (1 - CORP_RATE)
         franking  = np.minimum(cum_franking, max_frank)
         grossed_up = dividend + franking
-        ind_tax   = grossed_up * mr
+        ind_rate  = RETIRE_MR if scenario == 'Pty Ltd (Dist.)' else mr
+        ind_tax   = grossed_up * ind_rate
         net_tax   = ind_tax - franking
         final     = roc + dividend - net_tax
         total_tax = cum_div_tax + cum_cgt + np.maximum(net_tax, 0) - np.maximum(-net_tax, 0)
