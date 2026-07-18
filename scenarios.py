@@ -166,7 +166,7 @@ def simulate(mr, scenario):
         grossed_up    = franked_d / (1 - FRANKING_RATE)
         frank_credit  = grossed_up * FRANKING_RATE
 
-        if scenario == 'Pty Ltd':
+        if scenario == 'Pty Ltd' or scenario == 'Pty Ltd (Dist.)':
             div_tax = np.maximum(grossed_up * CORP_RATE - frank_credit, 0) + unfranked_d * CORP_RATE
         else:
             div_tax = grossed_up * mr - frank_credit + unfranked_d * mr
@@ -175,6 +175,8 @@ def simulate(mr, scenario):
         cost_bases += after_tax_div
         cum_div_tax  += div_tax.sum(axis=1)
         cum_franking += div_tax.sum(axis=1)
+        if scenario == 'Pty Ltd' or scenario == 'Pty Ltd (Dist.)':
+            cum_franking += frank_credit.sum(axis=1)  # franking credits received on portfolio dividends
 
         if is_final:
             sell_mask = np.ones((N_SIMS, N_STOCKS), dtype=bool)
@@ -379,39 +381,57 @@ for bi, mr_label in enumerate(DRILL_BRACKETS):
     fig, axes = plt.subplots(2, 2, figsize=(16, 10))
     years_arr = np.arange(1, YEARS + 1)
 
+    # Top-left: portfolio value paths
     ax = axes[0, 0]
     for i, sc in enumerate(SCENARIOS):
         m = np.median(pf_hist[sc], axis=0) / 1000
-        ax.plot(years_arr, m, color=COLS[i], lw=3, label=sc, zorder=10)
+        ls = ':' if 'Dist' in sc else '-'
+        lw = 1.5 if 'Dist' in sc else 3
+        ax.plot(years_arr, m, color=COLS[i], lw=lw, ls=ls, label=sc, zorder=10)
         picks = rng.choice(N_SIMS, size=10, replace=False)
         for j in picks:
             ax.plot(years_arr, pf_hist[sc][j] / 1000,
-                    color=COLS[i], alpha=0.2, lw=0.8)
+                    color=COLS[i], alpha=0.15, lw=0.8, ls=ls)
     ax.axhline(INITIAL / 1000, color='gray', lw=0.8, ls=':')
+    # Clamp y-axis to median range, ignoring extreme Monte Carlo traces
+    all_med = np.concatenate([np.median(pf_hist[sc], axis=0) for sc in SCENARIOS]) / 1000
+    ax.set_ylim(all_med.min() * 0.85, all_med.max() * 1.15)
     ax.set_ylabel('Portfolio Value ($k)'); ax.set_xlabel('Year')
     ax.set_title(f'Portfolio Value ({mr_label})', fontweight='bold')
-    ax.legend(fontsize=9)
+    ax.legend(fontsize=8)
 
+    # Top-right: cumulative CGT paths
     ax = axes[0, 1]
     for i, sc in enumerate(SCENARIOS):
         m = np.median(cgt_hist[sc], axis=0) / 1000
-        ax.plot(years_arr, m, color=COLS[i], lw=3, label=sc, zorder=10)
+        ls = ':' if 'Dist' in sc else '-'
+        lw = 1.5 if 'Dist' in sc else 3
+        ax.plot(years_arr, m, color=COLS[i], lw=lw, ls=ls, label=sc, zorder=10)
         picks = rng.choice(N_SIMS, size=10, replace=False)
         for j in picks:
             ax.plot(years_arr, cgt_hist[sc][j] / 1000,
-                    color=COLS[i], alpha=0.2, lw=0.8)
+                    color=COLS[i], alpha=0.15, lw=0.8, ls=ls)
+    all_cgt = np.concatenate([np.median(cgt_hist[sc], axis=0) for sc in SCENARIOS]) / 1000
+    ax.set_ylim(0, all_cgt.max() * 1.15)
     ax.set_ylabel('Cumulative CGT Paid ($k)'); ax.set_xlabel('Year')
     ax.set_title('Cumulative CGT Paid', fontweight='bold')
-    ax.legend(fontsize=9)
+    ax.legend(fontsize=8)
 
+    # Bottom-left: CGT vs terminal gain
     ax = axes[1, 0]
     for i, sc in enumerate(SCENARIOS):
         wealth, _, pf, cgt, _, _, _, _, _ = all_results[mr_label][sc]
-        net_gain = pf - INITIAL
+        if 'Dist' in sc:
+            net_gain = wealth - INITIAL  # post-franking: individual terminal wealth
+        else:
+            net_gain = pf - INITIAL      # portfolio value
         n_show = min(1000, N_SIMS)
         idx = rng.choice(N_SIMS, size=n_show, replace=False)
+        marker = 'D' if 'Dist' in sc else 'o'
+        s = 20 if 'Dist' in sc else 8
         ax.scatter(net_gain[idx] / 1000, cgt[idx] / 1000,
-                   alpha=0.15, s=8, color=COLS[i], label=sc, edgecolors='none')
+                   alpha=0.15, s=s, color=COLS[i], marker=marker,
+                   label=sc, edgecolors='none')
     all_net = np.concatenate([all_results[mr_label][sc][2] - INITIAL for sc in SCENARIOS])
     xlim = np.percentile(all_net / 1000, 98)
     ax.set_xlim(-20, xlim); ax.set_ylim(-5, xlim * 1.2)
@@ -420,19 +440,22 @@ for bi, mr_label in enumerate(DRILL_BRACKETS):
     ax.set_title('CGT vs Net Gain', fontweight='bold')
     ax.legend(fontsize=8, loc='upper left')
 
+    # Bottom-right: effective CGT rate histogram
     ax = axes[1, 1]
     ref_rate = REF_RATES[bi]
     for i, sc in enumerate(SCENARIOS):
-        wealth = all_results[mr_label][sc][0]
         cgt = all_results[mr_label][sc][3]
         pf = all_results[mr_label][sc][2]
         nom_gain = np.maximum(pf - INITIAL, 1e-9)
         eff_cgt = cgt / nom_gain
         mask = (eff_cgt > 0) & (eff_cgt < 1.0)
+        ht = 'step' if 'Dist' in sc else 'stepfilled'
         ax.hist(eff_cgt[mask] * 100, bins=50, color=COLS[i], alpha=0.35,
-                label=sc, density=True, histtype='stepfilled', linewidth=0.5)
-    ax.axvline(ref_rate * 0.5, color='gray', lw=1, ls=':', label=f'Old discount: {ref_rate*0.5:.1f}%')
-    ax.axvline(ref_rate, color='black', lw=1.5, ls='--', label=f'Stated rate: {ref_rate}%')
+                label=sc, density=True, histtype=ht, linewidth=0.5)
+    ax.axvline(ref_rate * 0.5, color='#999999', lw=2, ls='-', zorder=10,
+               label=f'Old discount: {ref_rate*0.5:.0f}%')
+    ax.axvline(ref_rate, color='black', lw=2, ls='-', zorder=10,
+               label=f'Stated rate: {ref_rate}%')
     ax.set_xlim(0, 90)
     ax.set_xlabel('CGT as % of Nominal Gain')
     ax.set_title('Effective CGT Rate Distribution', fontweight='bold')
@@ -480,30 +503,17 @@ if not IN_JUPYTER:
     plt.close()
 
 # %% [markdown]
-# ## 5. CPI Sensitivity (32% and 47% brackets)
-#
-# Effective CGT rate = CGT paid / economic capital gain. At CPI=0%, Pty Ltd dominates.
-# At CPI=2.5%, inflation indexing gives Post-Budget a large advantage over 30 years.
-
-# %%
-# Simulate buy-and-hold at different CPI rates for comparison
-# (Full re-simulation with turnover would require re-running the model.
-#  This approximates by showing the impact of CPI on the terminal real gain.)
-
-# %% [markdown]
 # ## 5. Sensitivity: Time Horizon
 #
-# Ranking stability across 5, 10, 15, 20, and 30-year horizons.
+# Does the ranking change with investment horizon? We test 5, 10, 15, 20, and 30 years.
 
 # %%
 HORIZONS = [5, 10, 15, 20, 30]
 _h_saved = _save_globals()
 
 print('\nTerminal wealth by horizon (mean $k)')
-print(f'{"":>22s} {"Scenario":>12s}', end='')
-for y in HORIZONS:
-    print(f' {y:>7}yr', end='')
-print(f'\n{"-" * 72}')
+print(f'{"":>22s} {"":>16s}  {"5yr":>7s} {"10yr":>7s} {"15yr":>7s} {"20yr":>7s} {"30yr":>7s}')
+print(f'{"":>22s} {"":>16s}  {"-----":>7s} {"-----":>7s} {"-----":>7s} {"-----":>7s} {"-----":>7s}')
 
 for arch_label, arch in ARCHETYPES.items():
     mr = arch['mr']
@@ -513,7 +523,33 @@ for arch_label, arch in ARCHETYPES.items():
             _regenerate_shared(y, S_SIMS)
             r = simulate(mr, sc)
             vals.append(r[0].mean() / 1000)
-        bar = ' '.join(f'${v:>6.0f}k' for v in vals)
-        print(f'{arch_label:>22s} {sc:>12s}  {bar}')
+        print(f'{arch_label:>22s} {sc:>16s}  ' + ' '.join(f'${v:>6.0f}k' for v in vals))
+
+# Build chart data
+horizon_data = {}
+for arch_label, arch in ARCHETYPES.items():
+    mr = arch['mr']
+    horizon_data[arch_label] = {}
+    for sc in SCENARIOS:
+        vals = []
+        for y in HORIZONS:
+            _regenerate_shared(y, S_SIMS)
+            r = simulate(mr, sc)
+            vals.append(r[0].mean() / 1000)
+        horizon_data[arch_label][sc] = vals
 
 _restore_globals(_h_saved)
+
+fig, ax = plt.subplots(1, 1, figsize=(12, 6))
+
+for i, sc in enumerate(SCENARIOS):
+    ax.plot(HORIZONS, horizon_data['4: $190,000 (47%)'][sc],
+            'o-', color=COLS[i], lw=2, markersize=6, label=sc)
+ax.set_xlabel('Horizon (years)'); ax.set_ylabel('Mean Wealth ($k)')
+ax.set_title('47% Bracket — Wealth by Horizon', fontweight='bold')
+ax.legend(fontsize=9)
+
+plt.tight_layout()
+plt.savefig('output/horizon_sensitivity.png', bbox_inches='tight')
+if not IN_JUPYTER:
+    plt.close()
