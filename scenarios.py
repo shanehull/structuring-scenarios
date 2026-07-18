@@ -356,7 +356,29 @@ summary = pd.DataFrame(rows)
 print(summary.to_string(index=False))
 
 # %% [markdown]
-# ## 2. Scenario Comparison
+# ## 1b. 30-Year Comparison
+#
+# Pty Ltd structures require long horizons to overcome the franking top-up.
+# At 30 years the compounding advantage of the 30% corporate rate becomes decisive.
+
+# %%
+r30_saved = _save_globals()
+_regenerate_shared(30, N_SIMS)
+
+print(f'\n{"Archetype":>22s} {"Pre-Budget":>12s} {"Post-Budget":>12s} {"Pty Ltd":>12s} {"Pty (Dist)":>12s}')
+print('-' * 76)
+for arch_label, arch in ARCHETYPES.items():
+    mr = arch['mr']
+    vals = []
+    for sc in SCENARIOS:
+        r = simulate(mr, sc)
+        vals.append(r[0].mean())
+    print(f'{arch_label:>22s} ' + ' '.join(f'${v:>11,.0f}' for v in vals))
+
+_restore_globals(r30_saved)
+
+# %% [markdown]
+# ## 2. Scenario Comparison (10yr)
 
 # %%
 print(f'\n{"Archetype":>22s} {"Pre-Budget":>12s} {"Post-Budget":>12s} {"Pty Ltd":>12s} {"Pty (Dist)":>12s}')
