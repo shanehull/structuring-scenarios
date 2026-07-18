@@ -59,13 +59,28 @@ CPI       = 0.025
 CORP_RATE = 0.30
 RHO       = 0.35
 
-# Pty Ltd: going concern (30% flat, no distribution) or liquidate at year 10
-PTY_DISTRIBUTE = False
-RETIRE_MR     = 0.30   # tax bracket at retirement/distribution
-
 # Dividend franking: most ASX dividends are fully franked at 30%
 FRANKING_PCT  = 0.80   # fraction of dividends that are fully franked
 FRANKING_RATE = 0.30   # corporate tax rate embedded in franking credit
+
+# Progressive Australian tax brackets 2025-26 (resident, incl. 2% Medicare)
+_BRACKETS = [
+    (18200,  0.02),
+    (45000,  0.18),
+    (135000, 0.32),
+    (190000, 0.39),
+    (1e12,   0.47),
+]
+
+def _progressive_tax(income):
+    """Tax on `income` using progressive brackets. Vectorized."""
+    tax = np.zeros_like(income, dtype=float)
+    prev = 0.0
+    for limit, rate in _BRACKETS:
+        in_bracket = np.clip(income, prev, limit) - prev
+        tax += in_bracket * rate
+        prev = limit
+    return tax
 
 VOL_MEDIAN = 0.22    # empirical ASX large/mid-cap
 VOL_SIGMA  = 0.20    # lognormal dispersion
@@ -74,10 +89,10 @@ TURNOVER_B = 6
 MAX_TURNOVER = 0.50
 
 ARCHETYPES = {
-    '1: $18,200 (2%)':   {'mr': 0.02},
-    '2: $45,000 (18%)':  {'mr': 0.18},
-    '3: $135,000 (32%)': {'mr': 0.32},
-    '4: $190,000 (47%)': {'mr': 0.47},
+    '1: $18,200 (2%)':   {'mr': 0.02, 'income': 18200},
+    '2: $45,000 (18%)':  {'mr': 0.18, 'income': 45000},
+    '3: $135,000 (32%)': {'mr': 0.32, 'income': 135000},
+    '4: $190,000 (47%)': {'mr': 0.47, 'income': 190000},
 }
 SCENARIOS = ['Pre-Budget', 'Post-Budget', 'Pty Ltd', 'Pty Ltd (Dist.)']
 COLS = ['#2e86c1', '#e74c3c', '#27ae60', '#f39c12']
@@ -144,7 +159,7 @@ print(f"Mean losers per portfolio: {(px_10yr < 1).sum(axis=1).mean():.1f} of {N_
 # ## Simulation engine
 
 # %%
-def simulate(mr, scenario):
+def simulate(mr, scenario, other_income=0):
     values       = np.full((N_SIMS, N_STOCKS), INIT_PER_STK, dtype=float)
     cost_bases   = np.full((N_SIMS, N_STOCKS), INIT_PER_STK, dtype=float)
     cost_years   = np.zeros((N_SIMS, N_STOCKS), dtype=int)  # purchase year per position
@@ -167,7 +182,9 @@ def simulate(mr, scenario):
         grossed_up    = franked_d / (1 - FRANKING_RATE)
         frank_credit  = grossed_up * FRANKING_RATE
 
-        if scenario == 'Pty Ltd' or scenario == 'Pty Ltd (Dist.)':
+        if scenario == 'Pty Ltd':
+            div_tax = np.maximum(grossed_up * CORP_RATE - frank_credit, 0) + unfranked_d * CORP_RATE
+        elif scenario == 'Pty Ltd (Dist.)':
             div_tax = np.maximum(grossed_up * CORP_RATE - frank_credit, 0) + unfranked_d * CORP_RATE
         else:
             div_tax = grossed_up * mr - frank_credit + unfranked_d * mr
@@ -175,9 +192,9 @@ def simulate(mr, scenario):
         values     += after_tax_div
         cost_bases += after_tax_div
         cum_div_tax  += div_tax.sum(axis=1)
-        cum_franking += div_tax.sum(axis=1)
+        # Pty Ltd entities: track franking credits received on portfolio dividends
         if scenario == 'Pty Ltd' or scenario == 'Pty Ltd (Dist.)':
-            cum_franking += frank_credit.sum(axis=1)  # franking credits received on portfolio dividends
+            cum_franking += frank_credit.sum(axis=1) + div_tax.sum(axis=1)
 
         if is_final:
             sell_mask = np.ones((N_SIMS, N_STOCKS), dtype=bool)
@@ -241,7 +258,6 @@ def simulate(mr, scenario):
                     tax = net * CORP_RATE
                     cum_cgt[sim]         += tax
                     cum_franking[sim]    += tax
-                    cum_franking[sim] += tax
                     carry_fwd[sim] = 0
                     pos = np.maximum(g, 0); ps = pos.sum()
                     if ps > 0: values[sim, mask] -= tax * pos / ps
@@ -257,14 +273,16 @@ def simulate(mr, scenario):
 
     total_pf = values.sum(axis=1)
 
-    if (scenario == 'Pty Ltd' and PTY_DISTRIBUTE) or scenario == 'Pty Ltd (Dist.)':
+    if scenario == 'Pty Ltd (Dist.)':
         roc       = np.minimum(total_pf, INITIAL)
         dividend  = total_pf - roc
         max_frank = dividend * CORP_RATE / (1 - CORP_RATE)
         franking  = np.minimum(cum_franking, max_frank)
         grossed_up = dividend + franking
-        ind_rate  = RETIRE_MR if scenario == 'Pty Ltd (Dist.)' else mr
-        ind_tax   = grossed_up * ind_rate
+        # Progressive: distribution sits on top of other income
+        tax_pre   = _progressive_tax(np.full(N_SIMS, other_income))
+        tax_post  = _progressive_tax(np.full(N_SIMS, other_income) + grossed_up)
+        ind_tax   = tax_post - tax_pre
         net_tax   = ind_tax - franking
         final     = roc + dividend - net_tax
         total_tax = cum_div_tax + cum_cgt + np.maximum(net_tax, 0) - np.maximum(-net_tax, 0)
@@ -328,9 +346,10 @@ def _regenerate_shared(years, n_sims):
 all_results = {}
 for arch_label, arch in ARCHETYPES.items():
     mr = arch['mr']
+    inc = arch['income']
     all_results[arch_label] = {}
     for sc in SCENARIOS:
-        all_results[arch_label][sc] = simulate(mr, sc)
+        all_results[arch_label][sc] = simulate(mr, sc, inc)
         print(f"  {arch_label} / {sc} done")
 
 # %% [markdown]
@@ -371,9 +390,10 @@ print(f'\n{"Archetype":>22s} {"Pre-Budget":>12s} {"Post-Budget":>12s} {"Pty Ltd"
 print('-' * 76)
 for arch_label, arch in ARCHETYPES.items():
     mr = arch['mr']
+    inc = arch['income']
     vals = []
     for sc in SCENARIOS:
-        r = simulate(mr, sc)
+        r = simulate(mr, sc, inc)
         vals.append(r[0].mean())
     print(f'{arch_label:>22s} ' + ' '.join(f'${v:>11,.0f}' for v in vals))
 
@@ -541,11 +561,12 @@ print(f'{"-"*22:>22s} {"-"*16:>16s}  {"-"*7:>7s} {"-"*7:>7s} {"-"*7:>7s} {"-"*7:
 
 for arch_label, arch in ARCHETYPES.items():
     mr = arch['mr']
+    inc = arch['income']
     for sc in SCENARIOS:
         vals = []
         for y in HORIZONS:
             _regenerate_shared(y, S_SIMS)
-            r = simulate(mr, sc)
+            r = simulate(mr, sc, inc)
             vals.append(r[0].mean() / 1000)
         print(f'{arch_label:>22s} {sc:>16s}  ' + ' '.join(f'${v:>6.0f}k' for v in vals))
 
@@ -553,12 +574,13 @@ for arch_label, arch in ARCHETYPES.items():
 horizon_data = {}
 for arch_label, arch in ARCHETYPES.items():
     mr = arch['mr']
+    inc = arch['income']
     horizon_data[arch_label] = {}
     for sc in SCENARIOS:
         vals = []
         for y in HORIZONS:
             _regenerate_shared(y, S_SIMS)
-            r = simulate(mr, sc)
+            r = simulate(mr, sc, inc)
             vals.append(r[0].mean() / 1000)
         horizon_data[arch_label][sc] = vals
 
