@@ -512,8 +512,8 @@ HORIZONS = [5, 10, 15, 20, 30]
 _h_saved = _save_globals()
 
 print('\nTerminal wealth by horizon (mean $k)')
-print(f'{"":>22s} {"":>16s}  {"5yr":>7s} {"10yr":>7s} {"15yr":>7s} {"20yr":>7s} {"30yr":>7s}')
-print(f'{"":>22s} {"":>16s}  {"-----":>7s} {"-----":>7s} {"-----":>7s} {"-----":>7s} {"-----":>7s}')
+print(f'{"Archetype":>22s} {"Scenario":>16s}  {"5yr":>7s} {"10yr":>7s} {"15yr":>7s} {"20yr":>7s} {"30yr":>7s}')
+print(f'{"-"*22:>22s} {"-"*16:>16s}  {"-"*7:>7s} {"-"*7:>7s} {"-"*7:>7s} {"-"*7:>7s} {"-"*7:>7s}')
 
 for arch_label, arch in ARCHETYPES.items():
     mr = arch['mr']
