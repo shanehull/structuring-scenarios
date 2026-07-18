@@ -363,7 +363,7 @@ print(summary.to_string(index=False))
 
 # %%
 r30_saved = _save_globals()
-_regenerate_shared(30, N_SIMS)
+_regenerate_shared(30, S_SIMS)
 
 print(f'\n{"Archetype":>22s} {"Pre-Budget":>12s} {"Post-Budget":>12s} {"Pty Ltd":>12s} {"Pty (Dist)":>12s}')
 print('-' * 76)
