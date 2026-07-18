@@ -50,6 +50,9 @@ INIT_PER_STK = INITIAL / N_STOCKS
 YEARS        = 10
 N_SIMS       = 10_000
 
+# Smaller sample for sensitivity sweeps — speed up dev, can increase for final
+S_SIMS       = 1_000
+
 CG_MEAN   = 0.07
 DIV_YIELD = 0.02
 CPI       = 0.025
@@ -268,6 +271,53 @@ def simulate(mr, scenario):
     return final, total_tax, total_pf, cum_cgt, cum_div_tax, cum_taxable, pf_history, cgt_history, total_pf
 
 # %% [markdown]
+# ## Sensitivity helpers
+
+# %%
+# Shared state that simulate() depends on — save/restore for parameter sweep
+_SHARED_GLOBALS = ['stock_vols', 'price_mults', 'n_sell', 'sell_idx_all',
+                   'N_SIMS', 'YEARS', 'INIT_PER_STK']
+
+def _save_globals():
+    g = globals()
+    return {k: g[k] for k in _SHARED_GLOBALS if k in g}
+
+def _restore_globals(saved):
+    for k, v in saved.items():
+        globals()[k] = v
+
+def _regenerate_shared(years, n_sims):
+    """Regenerate stock_vols, price_mults, turnover_rates, sell_idx_all."""
+    rng_local = np.random.default_rng(42)
+    vols = rng_local.lognormal(np.log(VOL_MEDIAN), VOL_SIGMA, (n_sims, N_STOCKS))
+    vols = np.clip(vols, 0.08, 0.60)
+    mu = np.log(1 + CG_MEAN) - 0.5 * vols ** 2
+    mkt = rng_local.normal(0, 1, (n_sims, 1, years))
+    idio = rng_local.normal(0, 1, (n_sims, N_STOCKS, years))
+    corr = np.sqrt(RHO) * mkt + np.sqrt(1 - RHO) * idio
+    pm = np.exp(mu[:, :, None] + vols[:, :, None] * corr)
+    tr = rng_local.beta(TURNOVER_A, TURNOVER_B, (n_sims, years - 1))
+    ns = (tr * N_STOCKS).astype(int)
+    ns = np.clip(ns, 0, int(N_STOCKS * MAX_TURNOVER))
+    sell = {}
+    for yr in range(years - 1):
+        mx = ns[:, yr].max()
+        idx = np.full((n_sims, max(mx, 1)), -1)
+        for s in range(n_sims):
+            if ns[s, yr] > 0:
+                idx[s, :ns[s, yr]] = rng_local.choice(N_STOCKS, ns[s, yr], replace=False)
+        sell[yr] = idx
+    # Set module-level globals that simulate() reads
+    g = globals()
+    g['stock_vols'] = vols
+    g['price_mults'] = pm
+    g['n_sell'] = ns
+    g['sell_idx_all'] = sell
+    g['N_SIMS'] = n_sims
+    g['YEARS'] = years
+    g['INIT_PER_STK'] = INITIAL / N_STOCKS
+
+# %% [markdown]
 # ## Run and cache
 
 # %%
@@ -458,26 +508,89 @@ if not IN_JUPYTER:
 # (Full re-simulation with turnover would require re-running the model.
 #  This approximates by showing the impact of CPI on the terminal real gain.)
 
-print('\nCPI and Pty Ltd vs Post-Budget comparison:')
-print(f'{"":>20s} {"CPI":>6s} {"Real gain":>10s} {"Post CGT":>10s} {"Pty CGT":>10s}')
-print('-' * 62)
+# %% [markdown]
+# ## 6. Sensitivity: Pty Ltd Distribution vs Going Concern
+#
+# When `PTY_DISTRIBUTE=True`, the company liquidates at year N with full franking
+# settlement at the individual's marginal rate. When `False`, the company is a
+# going concern paying only the 30% corporate rate indefinitely.
 
-for cpi_test in [0.0, 0.01, 0.015, 0.02, 0.025, 0.03, 0.04]:
-    idx_mult = (1 + cpi_test) ** YEARS
-    # Approximate: typical terminal portfolio growth
-    pf_growth = (1 + CG_MEAN + DIV_YIELD) ** YEARS * INITIAL
-    cost_mult = (1 + DIV_YIELD * (1 - 0.30)) ** YEARS  # reinvested divs
-    cost_base = INITIAL * cost_mult * 0.5 + INITIAL * 0.5  # rough estimate
-    nominal_gain = pf_growth - cost_base
-    real_gain = max(0, pf_growth - cost_base * idx_mult)
+# %%
+_dist_saved = _save_globals()
+_orig_dist = PTY_DISTRIBUTE
 
-    post_cgt_47 = real_gain * 0.47
-    pty_corp = nominal_gain * 0.30
-    pty_total = nominal_gain * 0.47  # franking top-up to marginal rate
-    # Cross-asset benefit: assume 10% of nominal gains offset by losses
-    pty_net = nominal_gain * 0.90 * 0.47
+print('Pty Ltd: Going Concern (30% flat) vs Distribution at Year N')
+print(f'{"Archetype":>22s} {"GoingConc":>12s} {"Distrib":>12s} {"Delta":>10s} {"Drag%":>8s}')
+print('-' * 70)
 
-    print(f'{"CPI=" + str(cpi_test*100) + "%":>20s} {cpi_test*100:>5.1f}% '
-          f'${real_gain:>9,.0f}  ${post_cgt_47:>9,.0f}  ${pty_net:>9,.0f}')
+for arch_label, arch in ARCHETYPES.items():
+    mr = arch['mr']
+    PTY_DISTRIBUTE = False
+    r_gc = simulate(mr, 'Pty Ltd')
+    PTY_DISTRIBUTE = True
+    r_dist = simulate(mr, 'Pty Ltd')
+    gc = r_gc[0].mean()
+    d = r_dist[0].mean()
+    print(f'{arch_label:>22s} ${gc:>10,.0f}  ${d:>10,.0f}  ${d-gc:>+,.0f}  {(d-gc)/INITIAL*100:>+5.1f}%')
 
-print('\nDone. Charts saved to output/')
+PTY_DISTRIBUTE = _orig_dist
+_restore_globals(_dist_saved)
+
+# %% [markdown]
+# ## 7. Sensitivity: Time Horizon
+#
+# Ranking stability across 5, 10, 15, 20, and 30-year horizons.
+
+# %%
+HORIZONS = [5, 10, 15, 20, 30]
+_h_saved = _save_globals()
+
+print('\nTerminal wealth by horizon (mean $k)')
+print(f'{"":>22s} {"Scenario":>12s}', end='')
+for y in HORIZONS:
+    print(f' {y:>7}yr', end='')
+print(f'\n{"-" * 72}')
+
+for arch_label, arch in ARCHETYPES.items():
+    mr = arch['mr']
+    for sc in SCENARIOS:
+        vals = []
+        for y in HORIZONS:
+            _regenerate_shared(y, S_SIMS)
+            r = simulate(mr, sc)
+            vals.append(r[0].mean() / 1000)
+        bar = ' '.join(f'${v:>6.0f}k' for v in vals)
+        print(f'{arch_label:>22s} {sc:>12s}  {bar}')
+
+_restore_globals(_h_saved)
+
+# %% [markdown]
+# ## 8. Distribution Drag: % Wealth Lost
+#
+# What fraction of terminal wealth is consumed by the franking settlement when
+# distributing at each horizon?
+
+# %%
+_h2_saved = _save_globals()
+
+print('\nDistribution drag (% of going-concern wealth lost to franking settlement)')
+header = f'{"Archetype":>22s}'
+for y in HORIZONS:
+    header += f' {y:>6}yr'
+print(header)
+print('-' * 56)
+
+for arch_label, arch in ARCHETYPES.items():
+    mr = arch['mr']
+    line = f'{arch_label:>22s}'
+    for y in HORIZONS:
+        _regenerate_shared(y, S_SIMS)
+        PTY_DISTRIBUTE = False
+        r_gc = simulate(mr, 'Pty Ltd')
+        PTY_DISTRIBUTE = True
+        r_dist = simulate(mr, 'Pty Ltd')
+        drag = (r_gc[0].mean() - r_dist[0].mean()) / r_gc[0].mean() * 100
+        line += f' {drag:>+5.1f}%'
+    print(line)
+
+_restore_globals(_h2_saved)
