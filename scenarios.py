@@ -358,8 +358,8 @@ print(summary.to_string(index=False))
 # %% [markdown]
 # ## 1b. 30-Year Comparison
 #
-# Pty Ltd structures require long horizons to overcome the franking top-up.
-# At 30 years the compounding advantage of the 30% corporate rate becomes decisive.
+# Pty Ltd structures require long horizons — at 30 years the compounding
+# advantage of the 30% corporate rate becomes decisive.
 
 # %%
 r30_saved = _save_globals()
@@ -527,7 +527,7 @@ if not IN_JUPYTER:
 # %% [markdown]
 # ## 5. Sensitivity: Time Horizon
 #
-# Does the ranking change with investment horizon? We test 5, 10, 15, 20, and 30 years.
+# Does the ranking change with investment horizon? Tests 5 through 30 years.
 
 # %%
 HORIZONS = [5, 10, 15, 20, 30]
