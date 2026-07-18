@@ -59,10 +59,10 @@ CPI       = 0.025
 CORP_RATE = 0.30
 RHO       = 0.35
 
-# Pty Ltd (Dist.): profits drawn down over multiple retirement years, keeping
-# total taxable income under ~$135k. Effective individual rate ≈ 32%
-# (30% base + 2% Medicare). Franking credits offset most of this.
-# Net top-up: grossed_up × (0.32 − 0.30) = grossed_up × 0.02.
+# Pty Ltd: 30% corp rate during accumulation. At retirement, profits are drawn
+# down over multiple years keeping total income under ~$135k. Effective individual
+# rate on distribution ≈ 32% (30% bracket + 2% Medicare). Franking credits offset
+# most, leaving a ~2% net top-up.
 R_DIST = 0.32
 
 # Dividend franking: most ASX dividends are fully franked at 30%
@@ -100,8 +100,8 @@ ARCHETYPES = {
     '3: $135,000 (32%)': {'mr': 0.32},
     '4: $190,000 (47%)': {'mr': 0.47},
 }
-SCENARIOS = ['Pre-Budget', 'Post-Budget', 'Pty Ltd', 'Pty Ltd (Dist.)']
-COLS = ['#2e86c1', '#e74c3c', '#27ae60', '#f39c12']
+SCENARIOS = ['Pre-Budget', 'Post-Budget', 'Pty Ltd']
+COLS = ['#2e86c1', '#e74c3c', '#27ae60']
 
 # %% [markdown]
 # ## Pre-generate shared data
@@ -190,16 +190,13 @@ def simulate(mr, scenario):
 
         if scenario == 'Pty Ltd':
             div_tax = np.maximum(grossed_up * CORP_RATE - frank_credit, 0) + unfranked_d * CORP_RATE
-        elif scenario == 'Pty Ltd (Dist.)':
-            div_tax = np.maximum(grossed_up * CORP_RATE - frank_credit, 0) + unfranked_d * CORP_RATE
         else:
             div_tax = grossed_up * mr - frank_credit + unfranked_d * mr
         after_tax_div = dividends - div_tax
         values     += after_tax_div
         cost_bases += after_tax_div
         cum_div_tax  += div_tax.sum(axis=1)
-        # Pty Ltd entities: track franking credits received on portfolio dividends
-        if scenario == 'Pty Ltd' or scenario == 'Pty Ltd (Dist.)':
+        if scenario == 'Pty Ltd':
             cum_franking += frank_credit.sum(axis=1) + div_tax.sum(axis=1)
 
         if is_final:
@@ -257,7 +254,7 @@ def simulate(mr, scenario):
                     cost_bases[sim, mask] = values[sim, mask]
                     cost_years[sim, mask] = yr
 
-            elif scenario == 'Pty Ltd' or scenario == 'Pty Ltd (Dist.)':
+            elif scenario == 'Pty Ltd':
                 net = g.sum() - carry_fwd[sim]
                 if net > 0:
                     cum_taxable[sim]     += net
@@ -279,13 +276,12 @@ def simulate(mr, scenario):
 
     total_pf = values.sum(axis=1)
 
-    if scenario == 'Pty Ltd (Dist.)':
+    if scenario == 'Pty Ltd':
         roc       = np.minimum(total_pf, INITIAL)
         dividend  = total_pf - roc
         max_frank = dividend * CORP_RATE / (1 - CORP_RATE)
         franking  = np.minimum(cum_franking, max_frank)
         grossed_up = dividend + franking
-        # Distributed over multiple years under ~$135k threshold → 30% effective
         ind_tax   = grossed_up * R_DIST
         net_tax   = ind_tax - franking
         final     = roc + dividend - net_tax
@@ -389,8 +385,8 @@ print(summary.to_string(index=False))
 r30_saved = _save_globals()
 _regenerate_shared(30, S_SIMS)
 
-print(f'\n{"Archetype":>22s} {"Pre-Budget":>12s} {"Post-Budget":>12s} {"Pty Ltd":>12s} {"Pty (Dist)":>12s}')
-print('-' * 76)
+print(f'\n{"Archetype":>22s} {"Pre-Budget":>12s} {"Post-Budget":>12s} {"Pty Ltd":>12s}')
+print('-' * 64)
 for arch_label, arch in ARCHETYPES.items():
     mr = arch['mr']
     vals = []
@@ -405,8 +401,8 @@ _restore_globals(r30_saved)
 # ## 2. Scenario Comparison (10yr)
 
 # %%
-print(f'\n{"Archetype":>22s} {"Pre-Budget":>12s} {"Post-Budget":>12s} {"Pty Ltd":>12s} {"Pty (Dist)":>12s}')
-print('-' * 76)
+print(f'\n{"Archetype":>22s} {"Pre-Budget":>12s} {"Post-Budget":>12s} {"Pty Ltd":>12s}')
+print('-' * 64)
 for arch_label, arch in ARCHETYPES.items():
     vals = []
     for sc in SCENARIOS:
@@ -431,53 +427,40 @@ for bi, mr_label in enumerate(DRILL_BRACKETS):
     ax = axes[0, 0]
     for i, sc in enumerate(SCENARIOS):
         m = np.median(pf_hist[sc], axis=0) / 1000
-        ls = ':' if 'Dist' in sc else '-'
-        lw = 1.5 if 'Dist' in sc else 3
-        ax.plot(years_arr, m, color=COLS[i], lw=lw, ls=ls, label=sc, zorder=10)
+        ax.plot(years_arr, m, color=COLS[i], lw=3, label=sc, zorder=10)
         picks = rng.choice(N_SIMS, size=10, replace=False)
         for j in picks:
             ax.plot(years_arr, pf_hist[sc][j] / 1000,
-                    color=COLS[i], alpha=0.15, lw=0.8, ls=ls)
+                    color=COLS[i], alpha=0.15, lw=0.8)
     ax.axhline(INITIAL / 1000, color='gray', lw=0.8, ls=':')
-    # Clamp y-axis to median range, ignoring extreme Monte Carlo traces
     all_med = np.concatenate([np.median(pf_hist[sc], axis=0) for sc in SCENARIOS]) / 1000
     ax.set_ylim(all_med.min() * 0.85, all_med.max() * 1.15)
     ax.set_ylabel('Portfolio Value ($k)'); ax.set_xlabel('Year')
     ax.set_title(f'Portfolio Value ({mr_label})', fontweight='bold')
     ax.legend(fontsize=8)
 
-    # Top-right: cumulative CGT paths
     ax = axes[0, 1]
     for i, sc in enumerate(SCENARIOS):
         m = np.median(cgt_hist[sc], axis=0) / 1000
-        ls = ':' if 'Dist' in sc else '-'
-        lw = 1.5 if 'Dist' in sc else 3
-        ax.plot(years_arr, m, color=COLS[i], lw=lw, ls=ls, label=sc, zorder=10)
+        ax.plot(years_arr, m, color=COLS[i], lw=3, label=sc, zorder=10)
         picks = rng.choice(N_SIMS, size=10, replace=False)
         for j in picks:
             ax.plot(years_arr, cgt_hist[sc][j] / 1000,
-                    color=COLS[i], alpha=0.15, lw=0.8, ls=ls)
+                    color=COLS[i], alpha=0.15, lw=0.8)
     all_cgt = np.concatenate([np.median(cgt_hist[sc], axis=0) for sc in SCENARIOS]) / 1000
     ax.set_ylim(0, all_cgt.max() * 1.15)
     ax.set_ylabel('Cumulative CGT Paid ($k)'); ax.set_xlabel('Year')
     ax.set_title('Cumulative CGT Paid', fontweight='bold')
     ax.legend(fontsize=8)
 
-    # Bottom-left: CGT vs terminal gain
     ax = axes[1, 0]
     for i, sc in enumerate(SCENARIOS):
         wealth, _, pf, cgt, _, _, _, _, _ = all_results[mr_label][sc]
-        if 'Dist' in sc:
-            net_gain = wealth - INITIAL  # post-franking: individual terminal wealth
-        else:
-            net_gain = pf - INITIAL      # portfolio value
+        net_gain = pf - INITIAL if sc != 'Pty Ltd' else wealth - INITIAL
         n_show = min(1000, N_SIMS)
         idx = rng.choice(N_SIMS, size=n_show, replace=False)
-        marker = 'D' if 'Dist' in sc else 'o'
-        s = 20 if 'Dist' in sc else 8
         ax.scatter(net_gain[idx] / 1000, cgt[idx] / 1000,
-                   alpha=0.15, s=s, color=COLS[i], marker=marker,
-                   label=sc, edgecolors='none')
+                   alpha=0.15, s=8, color=COLS[i], label=sc, edgecolors='none')
     all_net = np.concatenate([all_results[mr_label][sc][2] - INITIAL for sc in SCENARIOS])
     xlim = np.percentile(all_net / 1000, 98)
     ax.set_xlim(-20, xlim); ax.set_ylim(-5, xlim * 1.2)
@@ -486,7 +469,6 @@ for bi, mr_label in enumerate(DRILL_BRACKETS):
     ax.set_title('CGT vs Net Gain', fontweight='bold')
     ax.legend(fontsize=8, loc='upper left')
 
-    # Bottom-right: effective CGT rate histogram
     ax = axes[1, 1]
     ref_rate = REF_RATES[bi]
     for i, sc in enumerate(SCENARIOS):
@@ -495,9 +477,8 @@ for bi, mr_label in enumerate(DRILL_BRACKETS):
         nom_gain = np.maximum(pf - INITIAL, 1e-9)
         eff_cgt = cgt / nom_gain
         mask = (eff_cgt > 0) & (eff_cgt < 1.0)
-        ht = 'step' if 'Dist' in sc else 'stepfilled'
         ax.hist(eff_cgt[mask] * 100, bins=50, color=COLS[i], alpha=0.35,
-                label=sc, density=True, histtype=ht, linewidth=0.5)
+                label=sc, density=True, histtype='stepfilled', linewidth=0.5)
     ax.axvline(ref_rate * 0.5, color='#999999', lw=2, ls='-', zorder=10,
                label=f'Old discount: {ref_rate*0.5:.0f}%')
     ax.axvline(ref_rate, color='black', lw=2, ls='-', zorder=10,
