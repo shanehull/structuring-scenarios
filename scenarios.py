@@ -59,6 +59,12 @@ CPI       = 0.025
 CORP_RATE = 0.30
 RHO       = 0.35
 
+# Pty Ltd (Dist.): profits drawn down over multiple retirement years, keeping
+# total taxable income under ~$135k. Effective individual rate ≈ 32%
+# (30% base + 2% Medicare). Franking credits offset most of this.
+# Net top-up: grossed_up × (0.32 − 0.30) = grossed_up × 0.02.
+R_DIST = 0.32
+
 # Dividend franking: most ASX dividends are fully franked at 30%
 FRANKING_PCT  = 0.80   # fraction of dividends that are fully franked
 FRANKING_RATE = 0.30   # corporate tax rate embedded in franking credit
@@ -89,10 +95,10 @@ TURNOVER_B = 6
 MAX_TURNOVER = 0.50
 
 ARCHETYPES = {
-    '1: $18,200 (2%)':   {'mr': 0.02, 'income': 18200},
-    '2: $45,000 (18%)':  {'mr': 0.18, 'income': 45000},
-    '3: $135,000 (32%)': {'mr': 0.32, 'income': 135000},
-    '4: $190,000 (47%)': {'mr': 0.47, 'income': 190000},
+    '1: $18,200 (2%)':   {'mr': 0.02},
+    '2: $45,000 (18%)':  {'mr': 0.18},
+    '3: $135,000 (32%)': {'mr': 0.32},
+    '4: $190,000 (47%)': {'mr': 0.47},
 }
 SCENARIOS = ['Pre-Budget', 'Post-Budget', 'Pty Ltd', 'Pty Ltd (Dist.)']
 COLS = ['#2e86c1', '#e74c3c', '#27ae60', '#f39c12']
@@ -159,7 +165,7 @@ print(f"Mean losers per portfolio: {(px_10yr < 1).sum(axis=1).mean():.1f} of {N_
 # ## Simulation engine
 
 # %%
-def simulate(mr, scenario, other_income=0):
+def simulate(mr, scenario):
     values       = np.full((N_SIMS, N_STOCKS), INIT_PER_STK, dtype=float)
     cost_bases   = np.full((N_SIMS, N_STOCKS), INIT_PER_STK, dtype=float)
     cost_years   = np.zeros((N_SIMS, N_STOCKS), dtype=int)  # purchase year per position
@@ -279,10 +285,8 @@ def simulate(mr, scenario, other_income=0):
         max_frank = dividend * CORP_RATE / (1 - CORP_RATE)
         franking  = np.minimum(cum_franking, max_frank)
         grossed_up = dividend + franking
-        # Progressive: distribution sits on top of other income
-        tax_pre   = _progressive_tax(np.full(N_SIMS, other_income))
-        tax_post  = _progressive_tax(np.full(N_SIMS, other_income) + grossed_up)
-        ind_tax   = tax_post - tax_pre
+        # Distributed over multiple years under ~$135k threshold → 30% effective
+        ind_tax   = grossed_up * R_DIST
         net_tax   = ind_tax - franking
         final     = roc + dividend - net_tax
         total_tax = cum_div_tax + cum_cgt + np.maximum(net_tax, 0) - np.maximum(-net_tax, 0)
@@ -346,10 +350,9 @@ def _regenerate_shared(years, n_sims):
 all_results = {}
 for arch_label, arch in ARCHETYPES.items():
     mr = arch['mr']
-    inc = arch['income']
     all_results[arch_label] = {}
     for sc in SCENARIOS:
-        all_results[arch_label][sc] = simulate(mr, sc, inc)
+        all_results[arch_label][sc] = simulate(mr, sc)
         print(f"  {arch_label} / {sc} done")
 
 # %% [markdown]
@@ -390,10 +393,9 @@ print(f'\n{"Archetype":>22s} {"Pre-Budget":>12s} {"Post-Budget":>12s} {"Pty Ltd"
 print('-' * 76)
 for arch_label, arch in ARCHETYPES.items():
     mr = arch['mr']
-    inc = arch['income']
     vals = []
     for sc in SCENARIOS:
-        r = simulate(mr, sc, inc)
+        r = simulate(mr, sc)
         vals.append(r[0].mean())
     print(f'{arch_label:>22s} ' + ' '.join(f'${v:>11,.0f}' for v in vals))
 
@@ -561,26 +563,23 @@ print(f'{"-"*22:>22s} {"-"*16:>16s}  {"-"*7:>7s} {"-"*7:>7s} {"-"*7:>7s} {"-"*7:
 
 for arch_label, arch in ARCHETYPES.items():
     mr = arch['mr']
-    inc = arch['income']
     for sc in SCENARIOS:
         vals = []
         for y in HORIZONS:
             _regenerate_shared(y, S_SIMS)
-            r = simulate(mr, sc, inc)
+            r = simulate(mr, sc)
             vals.append(r[0].mean() / 1000)
         print(f'{arch_label:>22s} {sc:>16s}  ' + ' '.join(f'${v:>6.0f}k' for v in vals))
 
-# Build chart data
 horizon_data = {}
 for arch_label, arch in ARCHETYPES.items():
     mr = arch['mr']
-    inc = arch['income']
     horizon_data[arch_label] = {}
     for sc in SCENARIOS:
         vals = []
         for y in HORIZONS:
             _regenerate_shared(y, S_SIMS)
-            r = simulate(mr, sc, inc)
+            r = simulate(mr, sc)
             vals.append(r[0].mean() / 1000)
         horizon_data[arch_label][sc] = vals
 
