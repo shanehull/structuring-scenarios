@@ -99,6 +99,7 @@ Monte Carlo simulation with annual turnover and correlated returns.
 - **Pre-Budget wins at lower brackets.** The 50% CGT discount at 2-18% creates near-zero effective CGT rates. Combined with franking refunds on dividends, Pre-Budget dominates at brackets below the corporate rate.
 - **Pty Ltd wins at 47% ($199,706 vs $195,918).** The 30% corporate CGT rate with full loss offsetting and 0% tax on franked dividends overcomes Pre-Budget's 50% discount when the individual's marginal rate is high. Gap at 47%: Pty +$3.8k (1.9%).
 - **Post-Budget is worst at every bracket.** The 32% CGT floor (30% + Medicare), CPI-indexed gains with quarantined real losses, and intertemporal loss-carry rebound effects make Post-Budget the least favourable structure at all income levels.
+- **Lowest brackets are hit hardest.** At 2%, the effective CGT rate jumps from near-zero under Pre-Budget to the 32% floor under Post-Budget. At 18%, from ~9% to 32%. The floor operates as a regressive tax: the poorest investors face the largest relative increase.
 - **Pty Ltd is largely bracket-agnostic.** The 30% corporate rate applies regardless of the shareholder's bracket. The distribution top-up at 32% adds ~2% above the corporate rate. Result: $199,706 for all brackets. Your tax rate does not rise with income.
 
 ## 30-Year Comparison
