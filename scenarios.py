@@ -560,3 +560,127 @@ plt.tight_layout()
 plt.savefig('output/horizon_sensitivity.png', bbox_inches='tight')
 if not IN_JUPYTER:
     plt.close()
+
+# %% [markdown]
+# ## 6. Sensitivity: High Growth (15% CG, 0% Yield)
+#
+# What if returns are entirely capital growth? No dividends to compound via
+# reinvestment, no franking credits — pure CGT-only comparison.
+
+# %%
+_grow_saved = _save_globals()
+
+# Swap return assumptions, regenerate
+_g_saved_cg  = CG_MEAN
+_g_saved_div = DIV_YIELD
+g = globals()
+g['CG_MEAN']   = 0.15
+g['DIV_YIELD'] = 0.00
+
+high_growth_results = {}
+for arch_label, arch in ARCHETYPES.items():
+    mr = arch['mr']
+    high_growth_results[arch_label] = {}
+    for sc in SCENARIOS:
+        _regenerate_shared(YEARS, S_SIMS)
+        high_growth_results[arch_label][sc] = simulate(mr, sc)
+
+print(f'\nHigh Growth (15% CG, 0% Yield) — {YEARS}yr Mean Wealth')
+print(f'{"Archetype":>22s} {"Pre-Budget":>12s} {"Post-Budget":>12s} {"Pty Ltd":>12s}')
+print('-' * 64)
+for arch_label in ARCHETYPES:
+    vals = []
+    for sc in SCENARIOS:
+        v = high_growth_results[arch_label][sc][0].mean()
+        vals.append(v)
+    print(f'{arch_label:>22s} ' + ' '.join(f'${v:>11,.0f}' for v in vals))
+
+# Chart: all archetypes 2x2
+fig, axes = plt.subplots(2, 2, figsize=(16, 10))
+axes = axes.flatten()
+for idx, (arch_label, arch) in enumerate(ARCHETYPES.items()):
+    ax = axes[idx]
+    means = [high_growth_results[arch_label][sc][0].mean() / 1000 for sc in SCENARIOS]
+    errs  = [high_growth_results[arch_label][sc][0].std() / 1000 for sc in SCENARIOS]
+    xi = np.arange(len(SCENARIOS))
+    bars = ax.bar(xi, means, color=COLS, alpha=0.8, edgecolor='white', linewidth=0.8)
+    ax.errorbar(xi, means, yerr=errs, fmt='none', ecolor='#333333', capsize=4, lw=1)
+    for bar, mean in zip(bars, means):
+        ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 1,
+                f'${mean*1000:,.0f}', ha='center', va='bottom', fontsize=9, fontweight='bold')
+    ax.set_xticks(xi); ax.set_xticklabels(SCENARIOS, fontsize=9)
+    ax.axhline(INITIAL / 1000, color='gray', lw=0.8, ls=':')
+    ax.set_title(arch_label, fontweight='bold', fontsize=12)
+    ax.set_ylabel('After-Tax Wealth ($k)')
+    ax.set_ylim(0, max(means) * 1.3)
+plt.suptitle('High Growth: 15% CG, 0% Yield', fontweight='bold', y=1.01, fontsize=14)
+plt.tight_layout()
+plt.savefig('output/high_growth.png', bbox_inches='tight')
+if not IN_JUPYTER:
+    plt.close()
+
+# Restore
+g['CG_MEAN']   = _g_saved_cg
+g['DIV_YIELD'] = _g_saved_div
+_restore_globals(_grow_saved)
+
+# %% [markdown]
+# ## 7. Sensitivity: High Dividend (0% CG, 6% Yield)
+#
+# Pure income portfolio — all return from dividends, zero capital growth.
+# Tests the dividend tax treatment differences: franking credits and the
+# gap between individual and corporate rates on fully franked income.
+
+# %%
+_div_saved = _save_globals()
+
+g = globals()
+g['CG_MEAN']   = 0.00
+g['DIV_YIELD'] = 0.06
+
+high_div_results = {}
+for arch_label, arch in ARCHETYPES.items():
+    mr = arch['mr']
+    high_div_results[arch_label] = {}
+    for sc in SCENARIOS:
+        _regenerate_shared(YEARS, S_SIMS)
+        high_div_results[arch_label][sc] = simulate(mr, sc)
+
+print(f'\nHigh Dividend (0% CG, 6% Yield) — {YEARS}yr Mean Wealth')
+print(f'{"Archetype":>22s} {"Pre-Budget":>12s} {"Post-Budget":>12s} {"Pty Ltd":>12s}')
+print('-' * 64)
+for arch_label in ARCHETYPES:
+    vals = []
+    for sc in SCENARIOS:
+        v = high_div_results[arch_label][sc][0].mean()
+        vals.append(v)
+    print(f'{arch_label:>22s} ' + ' '.join(f'${v:>11,.0f}' for v in vals))
+
+# Chart: all archetypes 2x2
+fig, axes = plt.subplots(2, 2, figsize=(16, 10))
+axes = axes.flatten()
+for idx, (arch_label, arch) in enumerate(ARCHETYPES.items()):
+    ax = axes[idx]
+    means = [high_div_results[arch_label][sc][0].mean() / 1000 for sc in SCENARIOS]
+    errs  = [high_div_results[arch_label][sc][0].std() / 1000 for sc in SCENARIOS]
+    xi = np.arange(len(SCENARIOS))
+    bars = ax.bar(xi, means, color=COLS, alpha=0.8, edgecolor='white', linewidth=0.8)
+    ax.errorbar(xi, means, yerr=errs, fmt='none', ecolor='#333333', capsize=4, lw=1)
+    for bar, mean in zip(bars, means):
+        ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 1,
+                f'${mean*1000:,.0f}', ha='center', va='bottom', fontsize=9, fontweight='bold')
+    ax.set_xticks(xi); ax.set_xticklabels(SCENARIOS, fontsize=9)
+    ax.axhline(INITIAL / 1000, color='gray', lw=0.8, ls=':')
+    ax.set_title(arch_label, fontweight='bold', fontsize=12)
+    ax.set_ylabel('After-Tax Wealth ($k)')
+    ax.set_ylim(0, max(means) * 1.3)
+plt.suptitle('High Dividend: 0% CG, 6% Yield', fontweight='bold', y=1.01, fontsize=14)
+plt.tight_layout()
+plt.savefig('output/high_dividend.png', bbox_inches='tight')
+if not IN_JUPYTER:
+    plt.close()
+
+# Restore
+g['CG_MEAN']   = _g_saved_cg
+g['DIV_YIELD'] = _g_saved_div
+_restore_globals(_div_saved)

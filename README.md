@@ -1,4 +1,3 @@
-
 After the 2026-27 Budget's CGT reforms (now legislated, effective July 2027), we test the impact across tax brackets and entity structures. Key changes: the 50% CGT discount is replaced with CPI-indexed cost bases, a 30% minimum CGT rate applies, and real losses are quarantined. Nominal losses continue to offset gains across assets.
 
 ## Static Assumptions
@@ -83,8 +82,8 @@ Monte Carlo simulation with annual turnover and correlated returns.
 
 ## Results (10 Years, $100k Initial, 10,000 Sims)
 
-| Archetype | Pre-Budget | Post-Budget | Pty Ltd |
-| --------- | ---------- | ----------- | ------- |
+| Archetype | Pre-Budget | Post-Budget | Pty Ltd  |
+| --------- | ---------- | ----------- | -------- |
 | 1: 2%     | $263,426   | $232,226    | $199,706 |
 | 2: 18%    | $237,620   | $217,599    | $199,706 |
 | 3: 32%    | $216,706   | $205,475    | $199,706 |
@@ -106,8 +105,8 @@ Monte Carlo simulation with annual turnover and correlated returns.
 
 At longer horizons, the compounding advantage of the 30% corporate rate becomes decisive.
 
-| Archetype | Pre-Budget | Post-Budget | Pty Ltd |
-| --------- | ---------- | ----------- | ------- |
+| Archetype | Pre-Budget | Post-Budget | Pty Ltd  |
+| --------- | ---------- | ----------- | -------- |
 | 1: 2%     | $1,751,380 | $1,274,676  | $814,534 |
 | 2: 18%    | $1,302,159 | $1,047,921  | $814,534 |
 | 3: 32%    | $998,835   | $881,663    | $814,534 |
@@ -120,6 +119,20 @@ At 30 years, Pty Ltd dominates the 47% bracket ($814,534 vs Pre-Budget $746,799)
 ## Sensitivity: Time Horizon
 
 Ranking stability across 5, 10, 15, 20, and 30-year horizons. At 47%, Pty Ltd overtakes Pre-Budget around year 10 and the gap grows to ~9% by year 30. Pty Ltd's advantage over Post-Budget is immediate and widens from ~5% (5yr) to ~32% (30yr). Full table and chart in notebook Section 5.
+
+## Sensitivity: Return Composition
+
+Structural rankings are robust to return composition. Two extremes tested: pure growth (15% CG, 0% yield) and pure income (0% CG, 6% yield). Full tables and charts in notebook Sections 6-7.
+
+![High growth: 15% CG, 0% yield](output/high_growth.png)
+
+![High dividend: 0% CG, 6% yield](output/high_dividend.png)
+
+**High growth (15% CG, 0% yield):** Pre-Budget dominates all brackets ($318k-$406k) — the 50% CGT discount is untempered. Post-Budget flattens at $298k for brackets below 32% (floor rate). Pty Ltd worst except at 47% where it beats Post-Budget ($289k vs $252k). No dividends means no franking advantage for the company.
+
+**High dividend (0% CG, 6% yield):** Pre-Budget beats Post-Budget at all brackets, but the gap is modest — dividend tax treatment is identical under both regimes. Pty Ltd wins at 47% ($163k vs $143k-$146k) and is competitive at 32% ($163k vs $165k). Lower brackets are shielded by franking credits: Pre-Budget at 2% returns $216k vs Pty Ltd at $163k.
+
+The key structural insight holds across all return profiles: Pty Ltd is optimal at the top bracket, Pre-Budget at lower brackets, and Post-Budget is always worst. The optimal structure depends on your marginal rate, not your return composition.
 
 ## Conclusion
 
