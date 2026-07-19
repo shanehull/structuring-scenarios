@@ -12,7 +12,7 @@ After the 2026-27 Budget's changes removing the 50% CGT discount and cross-asset
 - Annual turnover: beta(2,6) distribution (mean 25%), capped at 50% of stocks; full liquidation at year 10
 - Monte Carlo: 10,000 simulation runs (1,000 for sensitivity sweeps)
 - Capital gains and dividends are reinvested; returns are lognormal
-- **Dividends: 80% fully franked at 30%.** Company pays 0% effective on franked dividends (franking credit offsets corporate tax). Individual pays top-up at `(mr - 0.30) / 0.70`, with excess credits refunded if mr < 30%. Unfranked portion (20%) taxed at full rate.
+- **Dividend franking.** 80% of dividends are fully franked. For individuals: tax = `(mr - 0.30) / 0.70` on franked dividends, with excess refunded if mr < 30%. For Pty Ltd: no tax on franked dividends (franking credits accumulate).
 - **Post-Budget CGT floor: 32%** (30% statutory + 2% Medicare levy). Minimum rate on real gains applies to all brackets.
 - **Pty Ltd: 30% corporate accumulation + multi-year retirement distribution.** Profits drawn down over multiple years, keeping total taxable income under $135k. Effective individual rate: 32% (30% bracket + 2% Medicare). Franking credits offset most of this, leaving a ~2% net top-up.
 
