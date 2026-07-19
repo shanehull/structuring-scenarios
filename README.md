@@ -1,9 +1,9 @@
 
-After the 2026-27 Budget's changes removing the 50% CGT discount and cross-asset loss offsetting, we test the impact across tax brackets and entity structures.
+After the 2026-27 Budget's changes removing the 50% CGT discount and cross-asset loss offsetting (now legislated, effective July 2027), we test the impact across tax brackets and entity structures.
 
 ## Static Assumptions
 
-- 6% capital gain p.a., 3% dividend yield p.a. (9% total return -- rounded from VAS 10yr: 5.2% CG, 4.16% yield)
+- 6% capital gain p.a., 3% dividend yield p.a. (9% total return, rounded from VAS 10yr: 5.2% CG, 4.16% yield)
 - 10 years (sensitivity: 5/10/15/20/30 years)
 - 2.5% CPI p.a. (for inflation-indexed cost base)
 - Stock-level annual volatility: lognormal distribution, median 22% (clipped 8-60%)
@@ -32,10 +32,10 @@ The 4 archetypes are based on the current resident tax rates 2025-26 from the [A
 
 To capture each bracket, we place archetypes at the top of the income bracket.
 
-- 1: 18,200 -- 2%
-- 2: 45,000 -- 18%
-- 3: 135,000 -- 32%
-- 4: 190,000 -- 47%
+- 1: 18,200 at 2%
+- 2: 45,000 at 18%
+- 3: 135,000 at 32%
+- 4: 190,000 at 47%
 
 ## Scenarios
 
@@ -49,7 +49,7 @@ To capture each bracket, we place archetypes at the top of the income bracket.
 
 - CGT: cost base indexed to CPI, real gain taxed at max(marginal_rate, 32%)
 - Dividends: franked treatment (as above)
-- Nominal losses offset real gains across assets (existing law unchanged). Stocks gaining nominally but underperforming CPI are neither a gain nor a loss -- effectively stranded.
+- Nominal losses offset real gains across assets (existing law unchanged). Stocks gaining nominally but underperforming CPI are neither a gain nor a loss and effectively stranded.
 - Source: [Bills Digest No. 67, 2025-26](https://www.aph.gov.au/Parliamentary_Business/Bills_Legislation/bd/bd2526/26bd067)
 
 ### 3: Pty Ltd
@@ -82,14 +82,12 @@ Monte Carlo simulation with annual turnover and correlated returns.
 | 3: 32%    | $216,706   | $205,475    | $199,706 |
 | 4: 47%    | $195,918   | $180,472    | $199,706 |
 
-![All Archetypes](output/all_archetypes_bars.png)
-
 ### Key Findings
 
 - **Pre-Budget wins at lower brackets.** The 50% CGT discount at 2-18% creates near-zero effective CGT rates. Combined with franking refunds on dividends, Pre-Budget dominates at brackets below the corporate rate.
 - **Pty Ltd wins at 47% ($199,706 vs $195,918).** The 30% corporate CGT rate with full loss offsetting and 0% tax on franked dividends overcomes Pre-Budget's 50% discount when the individual's marginal rate is high. Gap at 47%: Pty +$3.8k (1.9%).
 - **Post-Budget is worst at every bracket.** The 32% CGT floor (30% + Medicare), CPI-indexed gains with quarantined real losses, and intertemporal loss-carry rebound effects make Post-Budget the least favourable structure at all income levels.
-- **Pty Ltd is largely bracket-agnostic.** The 30% corporate rate applies regardless of the shareholder's bracket. The distribution top-up at 32% adds ~2% above the corporate rate. Result: $199,706 for all brackets -- your tax rate doesn't rise with income.
+- **Pty Ltd is largely bracket-agnostic.** The 30% corporate rate applies regardless of the shareholder's bracket. The distribution top-up at 32% adds ~2% above the corporate rate. Result: $199,706 for all brackets. Your tax rate does not rise with income.
 
 ## 30-Year Comparison
 
@@ -112,9 +110,9 @@ Ranking stability across 5, 10, 15, 20, and 30-year horizons. Pty Ltd advantage 
 
 The 2026-27 Budget's CGT reforms create a clear hierarchy. For investors in the 47% bracket, a Pty Ltd structure with multi-year retirement distribution is the optimal strategy. The combination of 30% corporate CGT with full cross-asset loss offsetting, 0% effective tax on franked dividends during accumulation, and a managed retirement drawdown at 32% effective rate produces the highest terminal wealth at both 10 and 30 years.
 
-For lower brackets, the individual Pre-Budget structure remains dominant because the 50% CGT discount is dramatically more valuable than the corporate rate advantage. The Post-Budget individual scenario -- the government's proposed replacement -- is the worst option at every bracket and every horizon. Its 32% CGT floor, CPI-indexed tax base with quarantined real losses, and intertemporal loss-carry rebound effects create a compounding tax penalty that grows with time.
+For lower brackets, the individual Pre-Budget structure remains dominant because the 50% CGT discount is dramatically more valuable than the corporate rate advantage. The Post-Budget individual scenario is the worst option at every bracket and every horizon. Its 32% CGT floor, CPI-indexed tax base with quarantined real losses, and intertemporal loss-carry rebound effects create a compounding tax penalty that grows with time.
 
-The key insight is that the corporate structure is not universally superior -- it depends on the investor's marginal rate. At the top bracket, the company wins. At lower brackets, the individual keeps it simple. No one should invest under the new Post-Budget rules as an individual if they have a choice.
+The key insight is that the corporate structure is not universally superior: it depends on the investor's marginal rate. At the top bracket, the company wins. At lower brackets, the individual keeps it simple. No one should invest under the new Post-Budget rules as an individual if they have a choice.
 
 ## Footnotes
 
