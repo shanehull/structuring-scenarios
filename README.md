@@ -126,7 +126,7 @@ The 2026-27 Budget's CGT reforms create a clear hierarchy. For investors in the 
 
 For lower brackets, the individual Pre-Budget structure remains dominant because the 50% CGT discount is dramatically more valuable than the corporate rate advantage. The Post-Budget individual scenario is the worst option at every bracket and every horizon. Its 32% CGT floor, CPI-indexed tax base with quarantined real losses, and intertemporal loss-carry rebound effects create a compounding tax penalty that grows with time.
 
-The key insight is that the corporate structure is not universally superior: it depends on the investor's marginal rate. At the top bracket, the company wins. At lower brackets, the individual keeps it simple. No one should invest under the new Post-Budget rules as an individual if they have a choice.
+The key insight is that the optimal structure depends on the investor's marginal rate. At the top bracket, the company wins. At lower brackets, the individual is better off. For investors in higher brackets, a Pty Ltd structure materially improves after-tax outcomes compared to investing as an individual under the new rules.
 
 ## Footnotes
 
