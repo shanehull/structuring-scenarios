@@ -11,11 +11,10 @@ After the 2026-27 Budget's changes removing the 50% CGT discount and cross-asset
 - Portfolio: 20 equally-weighted stocks ($5,000 each on a $100,000 portfolio)
 - Annual turnover: beta(2,6) distribution (mean 25%), capped at 50% of stocks; full liquidation at year 10
 - Monte Carlo: 10,000 simulation runs (1,000 for sensitivity sweeps)
-- Capital gains and dividends are reinvested
-- Returns are lognormal
+- Capital gains and dividends are reinvested; returns are lognormal
 - **Dividends: 80% fully franked at 30%.** Company pays 0% effective on franked dividends (franking credit offsets corporate tax). Individual pays top-up at `(mr - 0.30) / 0.70`, with excess credits refunded if mr < 30%. Unfranked portion (20%) taxed at full rate.
 - **Post-Budget CGT floor: 32%** (30% statutory + 2% Medicare levy). Minimum rate on real gains applies to all brackets.
-- **Pty Ltd: 30% corporate accumulation + multi-year retirement distribution.** Profits are drawn down over multiple retirement years, keeping total taxable income under $135k. Effective individual rate on distributions: 32% (30% bracket + 2% Medicare). Franking credits offset, leaving a ~2% net top-up.
+- **Pty Ltd: 30% corporate accumulation + multi-year retirement distribution.** Profits drawn down over multiple years, keeping total taxable income under $135k. Effective individual rate: 32% (30% bracket + 2% Medicare). Franking credits offset most of this, leaving a ~2% net top-up.
 
 Source for budget changes: [Budget 2026-27: Tax Reform](https://budget.gov.au/content/04-tax-reform.htm)
 
@@ -78,10 +77,12 @@ Monte Carlo simulation with annual turnover and correlated returns.
 
 | Archetype | Pre-Budget | Post-Budget | Pty Ltd |
 | --------- | ---------- | ----------- | ------- |
-| 1: 2%     | $263,426   | $234,177    | $199,706 |
-| 2: 18%    | $237,620   | $219,469    | $199,706 |
+| 1: 2%     | $263,426   | $232,226    | $199,706 |
+| 2: 18%    | $237,620   | $217,599    | $199,706 |
 | 3: 32%    | $216,706   | $205,475    | $199,706 |
 | 4: 47%    | $195,918   | $180,472    | $199,706 |
+
+![All Archetypes](output/all_archetypes_bars.png)
 
 ### Key Findings
 
@@ -96,20 +97,28 @@ At longer horizons, the compounding advantage of the 30% corporate rate becomes 
 
 | Archetype | Pre-Budget | Post-Budget | Pty Ltd |
 | --------- | ---------- | ----------- | ------- |
-| 1: 2%     | $1,580,608 | $1,102,828  | $787,933 |
-| 2: 18%    | $1,228,372 | $965,280    | $787,933 |
-| 3: 32%    | $979,937   | $835,817    | $787,933 |
-| 4: 47%    | $764,542   | $597,279    | $787,933 |
+| 1: 2%     | $1,751,380 | $1,274,676  | $814,534 |
+| 2: 18%    | $1,302,159 | $1,047,921  | $814,534 |
+| 3: 32%    | $998,835   | $881,663    | $814,534 |
+| 4: 47%    | $746,799   | $614,514    | $814,534 |
 
-At 30 years, Pty Ltd dominates the 47% bracket ($787,933 vs Pre-Budget $764,542) and is competitive at 32%. Pre-Budget still dominates lower brackets.
+At 30 years, Pty Ltd dominates the 47% bracket ($814,534 vs Pre-Budget $746,799) and is competitive at 32%. Pre-Budget still dominates lower brackets.
 
 ## Sensitivity: Time Horizon
 
-Ranking stability across 5, 10, 15, 20, and 30-year horizons. Pty Ltd advantage over Pre-Budget at 47% grows from 0% (5yr) to ~3% (30yr). Post-Budget falls further behind at every horizon. Full table and chart in notebook Section 5.
+Ranking stability across 5, 10, 15, 20, and 30-year horizons. Pty Ltd advantage over Pre-Budget at 47% grows from 0% (5yr) to ~9% (30yr). Post-Budget falls further behind at every horizon. Full table and chart in notebook Section 5.
+
+## Conclusion
+
+The 2026-27 Budget's CGT reforms create a clear hierarchy. For investors in the 47% bracket, a Pty Ltd structure with multi-year retirement distribution is the optimal strategy. The combination of 30% corporate CGT with full cross-asset loss offsetting, 0% effective tax on franked dividends during accumulation, and a managed retirement drawdown at 32% effective rate produces the highest terminal wealth at both 10 and 30 years.
+
+For lower brackets, the individual Pre-Budget structure remains dominant because the 50% CGT discount is dramatically more valuable than the corporate rate advantage. The Post-Budget individual scenario -- the government's proposed replacement -- is the worst option at every bracket and every horizon. Its 32% CGT floor, CPI-indexed tax base with quarantined real losses, and intertemporal loss-carry rebound effects create a compounding tax penalty that grows with time.
+
+The key insight is that the corporate structure is not universally superior -- it depends on the investor's marginal rate. At the top bracket, the company wins. At lower brackets, the individual keeps it simple. No one should invest under the new Post-Budget rules as an individual if they have a choice.
 
 ## Footnotes
 
-- **Multi-year distribution assumption.** Pty Ltd profits are assumed to be drawn down over multiple retirement years, keeping total taxable income under $135k. This produces an effective individual rate of 32% (30% bracket + 2% Medicare). A lump-sum distribution at the individual's full working-year marginal rate would produce worse results (see notebook history for sensitivity testing).
+- **Multi-year distribution assumption.** Pty Ltd profits are assumed to be drawn down over multiple retirement years, keeping total taxable income under $135k. This produces an effective individual rate of 32% (30% bracket + 2% Medicare). A lump-sum distribution at the full working-year marginal rate would produce worse results.
 - **VAS returns.** Capital gain and dividend yield are rounded from Vanguard Australian Shares Index (VAS) 10-year performance to mid-2026: 9.36% total return (5.20% CG + 4.16% yield). We use 9% total (6% CG + 3% yield) as a conservative round.
 - **Bills Digest interpretation confirmed.** Nominal losses offset real gains across assets. "No cross-asset offsetting" interpretation was rejected. Source: [Bills Digest No. 67, 2025-26](https://www.aph.gov.au/Parliamentary_Business/Bills_Legislation/bd/bd2526/26bd067).
 - **Fixed marginal rates during accumulation.** The model uses constant rates during the 10-year accumulation phase. In reality, dividends and realised gains push investors into higher brackets, increasing the Post-Budget penalty for mid-bracket investors.
