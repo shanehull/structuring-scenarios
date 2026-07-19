@@ -82,10 +82,6 @@ Monte Carlo simulation with annual turnover and correlated returns.
 | 3: 32%    | $216,706   | $205,475    | $199,706 |
 | 4: 47%    | $195,918   | $180,472    | $199,706 |
 
-![Bar chart: mean after-tax wealth by archetype and scenario](output/all_archetypes_bars.png)
-
-![Portfolio paths and CGT: 47% bracket](output/archetype4_paths.png)
-
 ### Key Findings
 
 - **Pre-Budget wins at lower brackets.** The 50% CGT discount at 2-18% creates near-zero effective CGT rates. Combined with franking refunds on dividends, Pre-Budget dominates at brackets below the corporate rate.
@@ -104,13 +100,11 @@ At longer horizons, the compounding advantage of the 30% corporate rate becomes 
 | 3: 32%    | $998,835   | $881,663    | $814,534 |
 | 4: 47%    | $746,799   | $614,514    | $814,534 |
 
-![Wealth by horizon: 47% bracket](output/horizon_sensitivity.png)
-
 At 30 years, Pty Ltd dominates the 47% bracket ($814,534 vs Pre-Budget $746,799) and is competitive at 32%. Pre-Budget still dominates lower brackets.
 
 ## Sensitivity: Time Horizon
 
-Ranking stability across 5, 10, 15, 20, and 30-year horizons. Pty Ltd advantage over Pre-Budget at 47% grows from 0% (5yr) to ~9% (30yr). Post-Budget falls further behind at every horizon. Full table and chart in notebook Section 5.
+Ranking stability across 5, 10, 15, 20, and 30-year horizons. At 47%, Pty Ltd overtakes Pre-Budget around year 10 and the gap grows to ~9% by year 30. Pty Ltd's advantage over Post-Budget is immediate and widens from ~5% (5yr) to ~32% (30yr). Full table and chart in notebook Section 5.
 
 ## Conclusion
 
