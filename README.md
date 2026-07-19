@@ -1,5 +1,5 @@
 
-After the 2026-27 Budget's changes removing the 50% CGT discount and cross-asset loss offsetting (now legislated, effective July 2027), we test the impact across tax brackets and entity structures.
+After the 2026-27 Budget's CGT reforms (now legislated, effective July 2027), we test the impact across tax brackets and entity structures. Key changes: the 50% CGT discount is replaced with CPI-indexed cost bases, a 30% minimum CGT rate applies, and real losses are quarantined. Nominal losses continue to offset gains across assets.
 
 ## Static Assumptions
 
@@ -58,6 +58,14 @@ To capture each bracket, we place archetypes at the top of the income bracket.
 - Franked dividends: 0% effective corporate tax (franking credits offset). Credits received accumulate in the franking account.
 - Cross-asset loss offsetting within the company (all nominal losses offset nominal gains)
 - **At retirement: multi-year distribution.** Profits drawn down over multiple years, keeping total taxable income under $135k. Effective individual rate: 32% (30% bracket + 2% Medicare). Franking credits offset most of this, leaving a ~2% net top-up (0.32 - 0.30).
+
+## Nominal vs Real Losses
+
+Under the new rules, a stock's cost base grows with CPI only for calculating gains, not losses. Three cases:
+
+- **Real gain (nominal > CPI-indexed cost):** taxed on the excess. Bought at $100, CPI adds $25, sold at $140 → taxed on $15.
+- **CPI-eroded (nominal gain, real loss):** no gain, no loss. Bought at $100, CPI adds $25, sold at $110 → no taxable gain ($110 < $125) and no loss ($110 > $100). The $15 of CPI-eroded purchasing power is permanently lost with no tax offset: a quarantined real loss.
+- **Nominal loss:** recognised at nominal value. Bought at $100, sold at $90 → $10 loss offsets real gains from other stocks.
 
 ## Modelling Approach
 
