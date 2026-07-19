@@ -49,7 +49,7 @@ To capture each bracket, we place archetypes at the top of the income bracket.
 
 - CGT: cost base indexed to CPI, real gain taxed at max(marginal_rate, 32%)
 - Dividends: franked treatment (as above)
-- Nominal losses offset real gains across assets (existing law unchanged). Stocks gaining nominally but underperforming CPI are neither a gain nor a loss and effectively stranded.
+- Nominal capital losses offset CPI-adjusted gains across assets. Cost bases are not indexed for determining losses — losses are recognised at their nominal value. Stocks with nominal gains below CPI generate no taxable gain and no loss to carry forward.
 - Source: [Bills Digest No. 67, 2025-26](https://www.aph.gov.au/Parliamentary_Business/Bills_Legislation/bd/bd2526/26bd067)
 
 ### 3: Pty Ltd
@@ -118,5 +118,5 @@ The key insight is that the corporate structure is not universally superior: it 
 
 - **Multi-year distribution assumption.** Pty Ltd profits are assumed to be drawn down over multiple retirement years, keeping total taxable income under $135k. This produces an effective individual rate of 32% (30% bracket + 2% Medicare). A lump-sum distribution at the full working-year marginal rate would produce worse results.
 - **VAS returns.** Capital gain and dividend yield are rounded from Vanguard Australian Shares Index (VAS) 10-year performance to mid-2026: 9.36% total return (5.20% CG + 4.16% yield). We use 9% total (6% CG + 3% yield) as a conservative round.
-- **Bills Digest interpretation confirmed.** Nominal losses offset real gains across assets. "No cross-asset offsetting" interpretation was rejected. Source: [Bills Digest No. 67, 2025-26](https://www.aph.gov.au/Parliamentary_Business/Bills_Legislation/bd/bd2526/26bd067).
+- **Bills Digest on loss offsetting.** Cost bases are indexed for gains but not for losses. Nominal losses offset CPI-adjusted gains across assets. Stocks below CPI generate no gain and no loss. Source: [Bills Digest No. 67, 2025-26](https://www.aph.gov.au/Parliamentary_Business/Bills_Legislation/bd/bd2526/26bd067).
 - **Fixed marginal rates during accumulation.** The model uses constant rates during the 10-year accumulation phase. In reality, dividends and realised gains push investors into higher brackets, increasing the Post-Budget penalty for mid-bracket investors.
