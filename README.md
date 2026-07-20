@@ -132,7 +132,7 @@ Structural rankings are robust to return composition. Two extremes tested: pure 
 
 **High dividend (0% CG, 6% yield):** Pre-Budget beats Post-Budget at all brackets, but the gap is modest — dividend tax treatment is identical under both regimes. Pty Ltd wins at 47% ($163k vs $143k-$146k) and is competitive at 32% ($163k vs $165k). Lower brackets are shielded by franking credits: Pre-Budget at 2% returns $216k vs Pty Ltd at $163k.
 
-The key structural insight holds across all return profiles: Pty Ltd is optimal at the top bracket, Pre-Budget at lower brackets, and Post-Budget is always worst. The optimal structure depends on your marginal rate, not your return composition.
+The key structural insight holds across all return profiles: Pty Ltd beats the individual Post-Budget regime at the top bracket, while Post-Budget individual is better at lower brackets (where franking refunds and lower marginal rates offset the CGT floor). Return composition does not change the choice: it depends on your marginal rate.
 
 ## Conclusion
 
